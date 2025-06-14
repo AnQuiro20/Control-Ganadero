@@ -1,8 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     // Variables globales
-    let inventory = JSON.parse(localStorage.getItem('cattleInventory')) || [];
-    let breedingRecords = JSON.parse(localStorage.getItem('breedingRecords')) || [];
+    let inventory = [];
+    let breedingRecords = [];
+
+    async function loadData() {
+        const animalsRes = await fetch('/api/animals');
+        inventory = await animalsRes.json();
+        const breedingRes = await fetch('/api/breeding');
+        breedingRecords = await breedingRes.json();
+    }
 
     // Elementos del DOM
     const animalType = document.getElementById('animalType');
@@ -20,7 +27,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const tabBreeding = new bootstrap.Tab(document.getElementById('breeding-tab'));
 
     // Configuración inicial
-    function initializeUI() {
+    async function initializeUI() {
+        await loadData();
         renderInventory();
         updateQRAnimalSelect();
         updateBreedingSelects();
@@ -50,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Registrar nuevo animal
-    animalForm.addEventListener('submit', function (e) {
+    animalForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const type = animalType.value;
@@ -117,7 +125,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Crear objeto animal
         const animal = {
-            id: Date.now(),
             type,
             earTag,
             name,
@@ -126,13 +133,14 @@ document.addEventListener('DOMContentLoaded', function () {
             breed,
             gender,
             births,
-            notes,
-            registrationDate: new Date().toISOString()
+            notes
         };
 
-        // Guardar y actualizar
-        inventory.push(animal);
-        localStorage.setItem('cattleInventory', JSON.stringify(inventory));
+        await fetch('/api/animals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(animal)
+        });
 
         Swal.fire({
             title: '¡Registro exitoso!',
@@ -181,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Registrar preñez
-    registerBreedingBtn.onclick = function () {
+    registerBreedingBtn.onclick = async function () {
         const cowId = parseInt(document.getElementById('pregnantCowSelect').value);
         const bullId = parseInt(document.getElementById('breedingBullSelect').value) || null;
         const breedingDate = document.getElementById('breedingDate').value;
@@ -197,17 +205,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const record = {
-            id: Date.now(),
             cowId,
             bullId,
             breedingDate,
-            expectedBirthDate,
-            registeredDate: new Date().toISOString(),
-            birthRegistered: false
+            expectedBirthDate
         };
 
-        breedingRecords.push(record);
-        localStorage.setItem('breedingRecords', JSON.stringify(breedingRecords));
+        await fetch('/api/breeding', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(record)
+        });
 
         Swal.fire({
             title: '¡Registro exitoso!',
@@ -354,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Eliminar registro de parto
-    function deleteBirthRecord(recordId) {
+    async function deleteBirthRecord(recordId) {
         const record = breedingRecords.find(r => r.id === recordId);
         if (!record || !record.birthRegistered) return;
 
@@ -371,20 +379,14 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#d33'
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                // Revertir el conteo de partos si la vaca existe
-                if (cow) {
-                    cow.births = Math.max(0, (cow.births || 1) - 1);
-                    localStorage.setItem('cattleInventory', JSON.stringify(inventory));
-                }
-
-                // Revertir el registro de parto
-                record.birthRegistered = false;
-                delete record.actualBirthDate;
-                localStorage.setItem('breedingRecords', JSON.stringify(breedingRecords));
-
-                initializeUI();
+                await fetch(`/api/breeding/${recordId}/birth`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actualBirthDate: null })
+                });
+                await initializeUI();
 
                 Swal.fire({
                     title: '¡Parto eliminado!',
@@ -423,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    function registerBirth(recordId) {
+    async function registerBirth(recordId) {
         const record = breedingRecords.find(r => r.id === recordId);
         if (!record || record.birthRegistered) return;
 
@@ -455,18 +457,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     return 'La fecha de parto no puede ser anterior a la fecha de preñez';
                 }
             }
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                // Actualizar número de partos de la vaca
-                cow.births = (cow.births || 0) + 1;
-                localStorage.setItem('cattleInventory', JSON.stringify(inventory));
-
-                // Marcar el registro como completado
-                record.birthRegistered = true;
-                record.actualBirthDate = result.value;
-                localStorage.setItem('breedingRecords', JSON.stringify(breedingRecords));
-
-                initializeUI();
+                await fetch(`/api/breeding/${recordId}/birth`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actualBirthDate: result.value })
+                });
+                await initializeUI();
 
                 Swal.fire({
                     title: '¡Parto registrado!',
@@ -480,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    function deleteBreedingRecord(recordId) {
+    async function deleteBreedingRecord(recordId) {
         const record = breedingRecords.find(r => r.id === recordId);
         if (!record) return;
 
@@ -504,11 +502,10 @@ document.addEventListener('DOMContentLoaded', function () {
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar'
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                breedingRecords = breedingRecords.filter(r => r.id !== recordId);
-                localStorage.setItem('breedingRecords', JSON.stringify(breedingRecords));
-                initializeUI();
+                await fetch(`/api/breeding/${recordId}`, { method: 'DELETE' });
+                await initializeUI();
 
                 Swal.fire({
                     title: '¡Eliminado!',
@@ -549,11 +546,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Eliminar solo del inventario (no tocar breedingRecords)
-            inventory = inventory.filter(a => a.id !== id);
-            localStorage.setItem('cattleInventory', JSON.stringify(inventory));
-
-            initializeUI();
+            await fetch(`/api/animals/${id}`, { method: 'DELETE' });
+            await initializeUI();
 
             // Limpiar QR si el animal mostrado fue eliminado
             const qrAnimalSelect = document.getElementById('qrAnimalSelect');
