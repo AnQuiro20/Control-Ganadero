@@ -4,10 +4,12 @@ document.addEventListener('DOMContentLoaded', function () {
     let inventory = [];
     let breedingRecords = [];
 
+    const API_BASE = document.querySelector('meta[name="api-base"]')?.getAttribute('content') || '';
+
     async function loadData() {
-        const animalsRes = await fetch('/api/animals');
+        const animalsRes = await fetch(`${API_BASE}/api/animals`);
         inventory = await animalsRes.json();
-        const breedingRes = await fetch('/api/breeding');
+        const breedingRes = await fetch(`${API_BASE}/api/breeding`);
         breedingRecords = await breedingRes.json();
     }
 
@@ -136,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
             notes
         };
 
-        await fetch('/api/animals', {
+        await fetch(`${API_BASE}/api/animals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(animal)
@@ -211,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function () {
             expectedBirthDate
         };
 
-        await fetch('/api/breeding', {
+        await fetch(`${API_BASE}/api/breeding`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(record)
@@ -381,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmButtonColor: '#d33'
         }).then(async (result) => {
             if (result.isConfirmed) {
-                await fetch(`/api/breeding/${recordId}/birth`, {
+                await fetch(`${API_BASE}/api/breeding/${recordId}/birth`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ actualBirthDate: null })
@@ -459,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }).then(async (result) => {
             if (result.isConfirmed) {
-                await fetch(`/api/breeding/${recordId}/birth`, {
+                await fetch(`${API_BASE}/api/breeding/${recordId}/birth`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ actualBirthDate: result.value })
@@ -504,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function () {
             cancelButtonText: 'Cancelar'
         }).then(async (result) => {
             if (result.isConfirmed) {
-                await fetch(`/api/breeding/${recordId}`, { method: 'DELETE' });
+                await fetch(`${API_BASE}/api/breeding/${recordId}`, { method: 'DELETE' });
                 await initializeUI();
 
                 Swal.fire({
@@ -546,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            await fetch(`/api/animals/${id}`, { method: 'DELETE' });
+            await fetch(`${API_BASE}/api/animals/${id}`, { method: 'DELETE' });
             await initializeUI();
 
             // Limpiar QR si el animal mostrado fue eliminado
