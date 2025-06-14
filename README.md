@@ -9,9 +9,11 @@ Para iniciar el proyecto de forma local o desplegarlo, crea un archivo `.env` op
 ```
 DATABASE_URL=postgres://usuario:clave@host:puerto/base
 API_BASE=https://midominio.com
+HOST=0.0.0.0
+PORT=3000
 ```
 
-`DATABASE_URL` permite usar PostgreSQL en lugar de SQLite. `API_BASE` define la URL del backend que se insertará automáticamente en `index.html`.
+`DATABASE_URL` permite usar PostgreSQL en lugar de SQLite. `API_BASE` define la URL del backend que se insertará automáticamente en `index.html`. `HOST` y `PORT` controlan dónde escuchará el servidor; por defecto usan `0.0.0.0:3000` para aceptar conexiones desde cualquier dirección.
 
 Luego instala dependencias y ejecuta el servidor:
 
