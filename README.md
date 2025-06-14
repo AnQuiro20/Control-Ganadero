@@ -2,18 +2,21 @@
 
 Esta versión incluye un servidor en Node.js para almacenar los datos de
 inventario y sala de partos. Por defecto usa SQLite pero puede conectarse a una
-base de datos PostgreSQL si se define la variable de entorno `DATABASE_URL`.
+base de datos MySQL si se definen las variables de entorno correspondientes.
 
 Para iniciar el proyecto de forma local o desplegarlo, crea un archivo `.env` opcional con las variables que necesites.
 
 ```
-DATABASE_URL=postgres://usuario:clave@host:puerto/base
+MYSQL_HOST=localhost
+MYSQL_USER=usuario
+MYSQL_PASSWORD=clave
+MYSQL_DATABASE=base
 API_BASE=https://midominio.com
 HOST=0.0.0.0
 PORT=3000
 ```
 
-`DATABASE_URL` permite usar PostgreSQL en lugar de SQLite. `API_BASE` define la URL del backend que se insertará automáticamente en `index.html`. `HOST` y `PORT` controlan dónde escuchará el servidor; por defecto usan `0.0.0.0:3000` para aceptar conexiones desde cualquier dirección.
+Si se configuran estas variables de MySQL el servidor usará esa base de datos remota en lugar de SQLite. `API_BASE` define la URL del backend que se insertará automáticamente en `index.html`. `HOST` y `PORT` controlan dónde escuchará el servidor; por defecto usan `0.0.0.0:3000` para aceptar conexiones desde cualquier dirección.
 
 Luego instala dependencias y ejecuta el servidor:
 

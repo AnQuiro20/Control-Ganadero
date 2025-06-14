@@ -2,22 +2,23 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const { Client } = require('pg');
+const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
 const app = express();
-// If DATABASE_URL is defined, use PostgreSQL. Otherwise fall back to SQLite.
+// If MySQL connection details are provided use MySQL, otherwise fall back to SQLite.
 let db;
-let pgClient;
-const usePg = !!process.env.DATABASE_URL;
+let mysqlPool;
+const useMysql = process.env.MYSQL_HOST && process.env.MYSQL_USER && process.env.MYSQL_DATABASE;
 
-if (usePg) {
-  pgClient = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : undefined
+if (useMysql) {
+  mysqlPool = mysql.createPool({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE
   });
-  pgClient.connect();
 } else {
   db = new sqlite3.Database('./database.db');
 }
@@ -38,11 +39,11 @@ app.get('/', (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
-// Initialize tables for either SQLite or PostgreSQL
-if (usePg) {
+// Initialize tables for either SQLite or MySQL
+if (useMysql) {
   (async () => {
-    await pgClient.query(`CREATE TABLE IF NOT EXISTS animals (
-      id SERIAL PRIMARY KEY,
+    await mysqlPool.query(`CREATE TABLE IF NOT EXISTS animals (
+      id INT AUTO_INCREMENT PRIMARY KEY,
       type TEXT,
       earTag TEXT UNIQUE,
       name TEXT,
@@ -54,8 +55,8 @@ if (usePg) {
       notes TEXT,
       registrationDate TEXT
     )`);
-    await pgClient.query(`CREATE TABLE IF NOT EXISTS breeding_records (
-      id SERIAL PRIMARY KEY,
+    await mysqlPool.query(`CREATE TABLE IF NOT EXISTS breeding_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
       cowId INTEGER,
       bullId INTEGER,
       breedingDate TEXT,
@@ -96,9 +97,9 @@ if (usePg) {
 
 // CRUD endpoints for animals
 app.get('/api/animals', (req, res) => {
-  if (usePg) {
-    pgClient.query('SELECT * FROM animals')
-      .then(result => res.json(result.rows))
+  if (useMysql) {
+    mysqlPool.query('SELECT * FROM animals')
+      .then(([rows]) => res.json(rows))
       .catch(err => res.status(500).json({ error: err.message }));
   } else {
     db.all('SELECT * FROM animals', (err, rows) => {
@@ -110,13 +111,17 @@ app.get('/api/animals', (req, res) => {
 
 app.post('/api/animals', (req, res) => {
   const a = req.body;
-  if (usePg) {
-    const query = `INSERT INTO animals(type, earTag, name, age, birthDate, breed, gender, births, notes, registrationDate)
-                   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`;
-    const params = [a.type, a.earTag, a.name, a.age, a.birthDate, a.breed, a.gender, a.births, a.notes, new Date().toISOString()];
-    pgClient.query(query, params)
-      .then(result => res.json(result.rows[0]))
-      .catch(err => res.status(500).json({ error: err.message }));
+  if (useMysql) {
+    (async () => {
+      const params = [a.type, a.earTag, a.name, a.age, a.birthDate, a.breed, a.gender, a.births, a.notes, new Date().toISOString()];
+      const [result] = await mysqlPool.execute(
+        `INSERT INTO animals(type, earTag, name, age, birthDate, breed, gender, births, notes, registrationDate)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        params
+      );
+      const [rows] = await mysqlPool.query('SELECT * FROM animals WHERE id=?', [result.insertId]);
+      res.json(rows[0]);
+    })().catch(err => res.status(500).json({ error: err.message }));
   } else {
     const stmt = db.prepare(`INSERT INTO animals(type, earTag, name, age, birthDate, breed, gender, births, notes, registrationDate)
       VALUES(?,?,?,?,?,?,?,?,?,?)`);
@@ -132,9 +137,9 @@ app.post('/api/animals', (req, res) => {
 
 app.delete('/api/animals/:id', (req, res) => {
   const { id } = req.params;
-  if (usePg) {
-    pgClient.query('DELETE FROM animals WHERE id=$1', [id])
-      .then(result => res.json({ deleted: result.rowCount }))
+  if (useMysql) {
+    mysqlPool.query('DELETE FROM animals WHERE id=?', [id])
+      .then(([result]) => res.json({ deleted: result.affectedRows }))
       .catch(err => res.status(500).json({ error: err.message }));
   } else {
     db.run('DELETE FROM animals WHERE id=?', id, function(err){
@@ -146,9 +151,9 @@ app.delete('/api/animals/:id', (req, res) => {
 
 // Breeding records
 app.get('/api/breeding', (req, res) => {
-  if (usePg) {
-    pgClient.query('SELECT * FROM breeding_records')
-      .then(result => res.json(result.rows))
+  if (useMysql) {
+    mysqlPool.query('SELECT * FROM breeding_records')
+      .then(([rows]) => res.json(rows))
       .catch(err => res.status(500).json({ error: err.message }));
   } else {
     db.all('SELECT * FROM breeding_records', (err, rows) => {
@@ -160,13 +165,17 @@ app.get('/api/breeding', (req, res) => {
 
 app.post('/api/breeding', (req, res) => {
   const r = req.body;
-  if (usePg) {
-    const query = `INSERT INTO breeding_records(cowId, bullId, breedingDate, expectedBirthDate, registeredDate, birthRegistered)
-                   VALUES($1,$2,$3,$4,$5,false) RETURNING *`;
-    const params = [r.cowId, r.bullId, r.breedingDate, r.expectedBirthDate, new Date().toISOString()];
-    pgClient.query(query, params)
-      .then(result => res.json(result.rows[0]))
-      .catch(err => res.status(500).json({ error: err.message }));
+  if (useMysql) {
+    (async () => {
+      const params = [r.cowId, r.bullId, r.breedingDate, r.expectedBirthDate, new Date().toISOString()];
+      const [result] = await mysqlPool.execute(
+        `INSERT INTO breeding_records(cowId, bullId, breedingDate, expectedBirthDate, registeredDate, birthRegistered)
+         VALUES (?,?,?,?,?,false)`,
+        params
+      );
+      const [rows] = await mysqlPool.query('SELECT * FROM breeding_records WHERE id=?', [result.insertId]);
+      res.json(rows[0]);
+    })().catch(err => res.status(500).json({ error: err.message }));
   } else {
     const stmt = db.prepare(`INSERT INTO breeding_records(cowId, bullId, breedingDate, expectedBirthDate, registeredDate, birthRegistered)
       VALUES(?,?,?,?,?,0)`);
@@ -183,17 +192,15 @@ app.post('/api/breeding', (req, res) => {
 app.put('/api/breeding/:id/birth', (req, res) => {
   const { id } = req.params;
   const { actualBirthDate } = req.body;
-  const query = actualBirthDate ?
-    `UPDATE breeding_records SET birthRegistered=1, actualBirthDate=$1 WHERE id=$2` :
-    `UPDATE breeding_records SET birthRegistered=0, actualBirthDate=NULL WHERE id=$1`;
-  const paramsPg = actualBirthDate ? [actualBirthDate, id] : [id];
-  const querySqlite = actualBirthDate ?
+  const queryMysql = actualBirthDate ?
     `UPDATE breeding_records SET birthRegistered=1, actualBirthDate=? WHERE id=?` :
     `UPDATE breeding_records SET birthRegistered=0, actualBirthDate=NULL WHERE id=?`;
-  if (usePg) {
-    pgClient.query(query, paramsPg)
-      .then(() => pgClient.query('SELECT * FROM breeding_records WHERE id=$1', [id]))
-      .then(result => res.json(result.rows[0]))
+  const paramsMysql = actualBirthDate ? [actualBirthDate, id] : [id];
+  const querySqlite = queryMysql;
+  if (useMysql) {
+    mysqlPool.query(queryMysql, paramsMysql)
+      .then(() => mysqlPool.query('SELECT * FROM breeding_records WHERE id=?', [id]))
+      .then(([rows]) => res.json(rows[0]))
       .catch(err => res.status(500).json({ error: err.message }));
   } else {
     const params = actualBirthDate ? [actualBirthDate, id] : [id];
@@ -209,9 +216,9 @@ app.put('/api/breeding/:id/birth', (req, res) => {
 
 app.delete('/api/breeding/:id', (req, res) => {
   const { id } = req.params;
-  if (usePg) {
-    pgClient.query('DELETE FROM breeding_records WHERE id=$1', [id])
-      .then(result => res.json({ deleted: result.rowCount }))
+  if (useMysql) {
+    mysqlPool.query('DELETE FROM breeding_records WHERE id=?', [id])
+      .then(([result]) => res.json({ deleted: result.affectedRows }))
       .catch(err => res.status(500).json({ error: err.message }));
   } else {
     db.run('DELETE FROM breeding_records WHERE id=?', id, function(err){
