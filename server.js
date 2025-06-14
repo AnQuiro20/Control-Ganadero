@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const { Client } = require('pg');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
@@ -23,6 +25,17 @@ if (usePg) {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve index.html with configurable API base
+app.get('/', (req, res) => {
+  const indexPath = path.join(__dirname, 'index.html');
+  fs.readFile(indexPath, 'utf8', (err, html) => {
+    if (err) return res.status(500).send('Error loading page');
+    const apiBase = process.env.API_BASE || '';
+    res.send(html.replace('<meta name="api-base" content="">', `<meta name="api-base" content="${apiBase}">`));
+  });
+});
+
 app.use(express.static(path.join(__dirname)));
 
 // Initialize tables for either SQLite or PostgreSQL
