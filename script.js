@@ -138,23 +138,38 @@ document.addEventListener('DOMContentLoaded', function () {
             notes
         };
 
-        await fetch(`${API_BASE}/api/animals`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(animal)
-        });
+        try {
+            const response = await fetch(`${API_BASE}/api/animals`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(animal)
+            });
 
-        Swal.fire({
-            title: '¡Registro exitoso!',
-            html: `<strong>${name}</strong> (${earTag}) ha sido registrado correctamente.`,
-            icon: 'success',
-            confirmButtonColor: '#2c8a47',
-            confirmButtonText: 'Aceptar'
-        });
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                const errorMsg = data.error || 'Error al registrar el animal';
+                throw new Error(errorMsg);
+            }
 
-        animalForm.reset();
-        initializeUI();
-        tabInventory.show();
+            Swal.fire({
+                title: '¡Registro exitoso!',
+                html: `<strong>${name}</strong> (${earTag}) ha sido registrado correctamente.`,
+                icon: 'success',
+                confirmButtonColor: '#2c8a47',
+                confirmButtonText: 'Aceptar'
+            });
+
+            animalForm.reset();
+            await initializeUI();
+            tabInventory.show();
+        } catch (err) {
+            Swal.fire({
+                title: 'Error',
+                text: err.message,
+                icon: 'error',
+                confirmButtonColor: '#d33'
+            });
+        }
     });
 
     // Función para actualizar selects de reproducción
@@ -213,25 +228,40 @@ document.addEventListener('DOMContentLoaded', function () {
             expectedBirthDate
         };
 
-        await fetch(`${API_BASE}/api/breeding`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(record)
-        });
+        try {
+            const response = await fetch(`${API_BASE}/api/breeding`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(record)
+            });
 
-        Swal.fire({
-            title: '¡Registro exitoso!',
-            text: 'La preñez ha sido registrada correctamente',
-            icon: 'success'
-        });
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                const errorMsg = data.error || 'Error al registrar la preñez';
+                throw new Error(errorMsg);
+            }
 
-        // Limpiar formulario
-        document.getElementById('pregnantCowSelect').value = '';
-        document.getElementById('breedingBullSelect').value = '';
-        document.getElementById('breedingDate').value = '';
-        document.getElementById('expectedBirthDate').value = '';
+            Swal.fire({
+                title: '¡Registro exitoso!',
+                text: 'La preñez ha sido registrada correctamente',
+                icon: 'success'
+            });
 
-        initializeUI();
+            // Limpiar formulario
+            document.getElementById('pregnantCowSelect').value = '';
+            document.getElementById('breedingBullSelect').value = '';
+            document.getElementById('breedingDate').value = '';
+            document.getElementById('expectedBirthDate').value = '';
+
+            await initializeUI();
+        } catch (err) {
+            Swal.fire({
+                title: 'Error',
+                text: err.message,
+                icon: 'error',
+                confirmButtonColor: '#d33'
+            });
+        }
     };
 
     // Funciones de renderizado (mantienen la misma implementación que en tu código original)
