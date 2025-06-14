@@ -1,0 +1,239 @@
+/* Estilo general */
+body {
+    background-color: #f0e8dc;
+    font-family: 'Roboto', sans-serif;
+    color: #333;
+}
+
+.header {
+    background: linear-gradient(90deg, #1b4332, #2d6a4f);
+    color: white;
+    padding: 25px 0;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: fadeInDown 1s ease;
+}
+
+.nav-tabs .nav-link {
+    color: #2d6a4f;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active {
+    color: #ffffff;
+    background-color: #2d6a4f;
+    border: none;
+    border-radius: 5px 5px 0 0;
+    animation: slideInLeft 0.5s ease;
+}
+
+.card {
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease;
+}
+
+.card-header {
+    background-color: #40916c;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.btn-primary {
+    background-color: #1b4332;
+    border: none;
+    transition: background 0.3s ease;
+    animation: zoomIn 0.4s;
+}
+
+.btn-primary:hover {
+    background-color: #14532d;
+}
+
+.btn-success {
+    background-color: #2d6a4f;
+    border: none;
+}
+
+.btn-success:hover {
+    background-color: #1e5631;
+}
+
+.table {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.95rem;
+}
+
+.table th {
+    background-color: #2d6a4f;
+    color: white;
+    border: none;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.qr-code {
+    width: 180px;
+    height: 180px;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    border: 2px dashed #2d6a4f;
+    border-radius: 8px;
+    animation: fadeIn 0.5s ease;
+}
+
+.animal-icon {
+    font-size: 2.2rem;
+    margin-right: 10px;
+    animation: pulse 1.5s infinite;
+}
+
+/* Sala de partos */
+.fa-baby-carriage {
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.fa-baby {
+    color: #40916c;
+    animation: bounce 1.8s infinite;
+}
+
+.delete-birth-btn {
+    background-color: #e63946;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+}
+
+.delete-birth-btn:hover {
+    background-color: #ba1b1d;
+}
+
+.tab-content {
+     background-color: #fffaf3;
+    border-radius: 0 0 10px 10px;
+    padding: 25px;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    animation: fadeIn 0.7s ease;
+}
+
+/* Animaciones */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+@keyframes swing {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(5deg);
+    }
+
+    50% {
+        transform: rotate(0deg);
+    }
+
+    75% {
+        transform: rotate(-5deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
